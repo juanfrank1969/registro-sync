@@ -9,10 +9,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
-        body { background-color: #f3f4f6; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f3f4f6; font-family: sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .input-field { border: 2px solid #cbd5e1; border-radius: 0.75rem; padding: 0.75rem; width: 100%; font-weight: bold; outline: none; transition: border-color 0.2s; }
+        .input-field { border: 2px solid #cbd5e1; border-radius: 0.75rem; padding: 0.75rem; width: 100%; font-weight: bold; outline: none; transition: border-color 0.2s; font-size: 16px; }
         .input-field:focus { border-color: #1e40af; }
         #export-modal { display: none; }
         #export-modal.active { display: flex; }
@@ -20,135 +20,146 @@
 </head>
 <body class="flex flex-col min-h-screen">
 
-    <!-- Encabezado -->
+    <!-- Encabezado con estado GPS -->
     <header class="bg-blue-800 text-white p-4 shadow-lg sticky top-0 z-50 flex justify-between items-center">
         <div>
-            <h1 class="text-lg font-black uppercase">SYNC <span class="text-blue-300">PRO</span></h1>
-            <p id="gps-status" class="text-[8px] font-bold text-blue-200 uppercase">GPS: Iniciando...</p>
+            <h1 class="text-lg font-black uppercase tracking-tighter">SYNC <span class="text-blue-300">PRO</span></h1>
+            <p id="gps-status" class="text-[9px] font-bold text-blue-200 uppercase">GPS: VERIFICANDO...</p>
         </div>
-        <i id="gps-icon" class="fas fa-satellite-dish text-blue-400"></i>
+        <i id="gps-icon" class="fas fa-satellite-dish text-blue-400 animate-pulse"></i>
     </header>
 
-    <main class="flex-1 p-4 mb-20 overflow-y-auto">
+    <main class="flex-1 p-4 mb-24">
         
-        <!-- Pestaña: Registro -->
+        <!-- Pestaña: Registro de datos -->
         <section id="tab-form" class="tab-content active">
-            <div class="bg-white rounded-3xl p-6 shadow-md space-y-4">
-                <div class="text-center pb-2 border-b border-gray-100">
-                    <h2 class="font-black text-gray-700 uppercase text-xs tracking-wider">Formulario de Registro</h2>
+            <div class="bg-white rounded-3xl p-6 shadow-xl space-y-5">
+                <div class="text-center border-b pb-3">
+                    <h2 class="font-black text-gray-800 uppercase text-sm tracking-widest">Formulario de Registro</h2>
                 </div>
 
-                <div class="space-y-3">
+                <div class="space-y-4">
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase ml-1">Cédula de Ciudadanía</label>
-                        <input type="number" id="cedula" placeholder="0000000000" class="input-field">
+                        <label class="text-[11px] font-black text-blue-900 uppercase ml-1">Cédula de Ciudadanía</label>
+                        <input type="number" id="cedula" placeholder="Ej: 1067000..." class="input-field">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase ml-1">Nombres Completos</label>
+                        <label class="text-[11px] font-black text-blue-900 uppercase ml-1">Nombres</label>
                         <input type="text" id="names" placeholder="Nombres" oninput="this.value = this.value.toUpperCase()" class="input-field">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase ml-1">Apellidos Completos</label>
+                        <label class="text-[11px] font-black text-blue-900 uppercase ml-1">Apellidos</label>
                         <input type="text" id="lastnames" placeholder="Apellidos" oninput="this.value = this.value.toUpperCase()" class="input-field">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 uppercase ml-1">Número de WhatsApp</label>
+                        <label class="text-[11px] font-black text-blue-900 uppercase ml-1">Número WhatsApp</label>
                         <input type="number" id="phone" placeholder="3000000000" class="input-field">
                     </div>
                 </div>
 
-                <button onclick="saveData()" id="save-btn" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform mt-4 flex items-center justify-center gap-2">
-                    <i class="fas fa-save"></i> GUARDAR REGISTRO
+                <button onclick="saveData()" id="save-btn" class="w-full bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <i class="fas fa-save text-lg"></i> GUARDAR REGISTRO
                 </button>
             </div>
         </section>
 
-        <!-- Pestaña: Lista de Datos -->
+        <!-- Pestaña: Visualización de Base de Datos -->
         <section id="tab-list" class="tab-content">
-            <h2 class="text-xs font-black text-gray-500 uppercase mb-4 px-2">Registros en el Dispositivo</h2>
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h2 class="text-xs font-black text-gray-500 uppercase tracking-widest">Base de Datos Local</h2>
+                <span id="counter" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black">0 REGISTROS</span>
+            </div>
             <div id="list-container" class="space-y-4"></div>
         </section>
     </main>
 
-    <!-- Modal de Exportación con Función de Compartir -->
-    <div id="export-modal" class="fixed inset-0 bg-black/70 z-[100] items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4 text-center">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="font-black uppercase text-sm">Exportar Reporte</h3>
-                <button onclick="toggleModal()" class="text-gray-400 p-2"><i class="fas fa-times"></i></button>
+    <!-- Modal para exportar archivos -->
+    <div id="export-modal" class="fixed inset-0 bg-black/80 z-[100] items-center justify-center p-6 backdrop-blur-md">
+        <div class="bg-white w-full max-w-xs rounded-[2.5rem] p-8 shadow-2xl text-center">
+            <div class="flex justify-end mb-2">
+                <button onclick="toggleModal()" class="text-gray-300 hover:text-red-500 transition-colors"><i class="fas fa-circle-xmark text-2xl"></i></button>
             </div>
-            <p class="text-[10px] text-gray-500 font-bold uppercase mb-4 text-left">Selecciona el método de envío:</p>
             
-            <button onclick="handleShare('csv'); toggleModal();" class="w-full bg-emerald-100 text-emerald-700 font-black py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform border border-emerald-200">
-                <i class="fas fa-file-excel text-xl"></i> ENVIAR EXCEL (CSV)
-            </button>
+            <div class="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-file-export text-3xl text-blue-600"></i>
+            </div>
             
-            <button onclick="handleShare('pdf'); toggleModal();" class="w-full bg-red-100 text-red-700 font-black py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform border border-red-200">
-                <i class="fas fa-file-pdf text-xl"></i> ENVIAR PDF
-            </button>
+            <h3 class="font-black uppercase text-lg text-gray-800 mb-1">Exportar</h3>
+            <p class="text-[10px] text-gray-400 font-bold uppercase mb-6 tracking-tighter">Selecciona el formato de descarga</p>
             
-            <p class="text-[9px] text-gray-400 mt-2 italic font-medium">Nota: Se abrirá el menú de tu teléfono para compartir.</p>
+            <div class="space-y-3">
+                <button onclick="handleExport('csv')" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+                    <i class="fas fa-file-excel"></i> DESCARGAR EXCEL (CSV)
+                </button>
+                <button onclick="handleExport('pdf')" class="w-full bg-red-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+                    <i class="fas fa-file-pdf"></i> DESCARGAR PDF
+                </button>
+            </div>
+            <p class="text-[9px] text-gray-400 mt-4 leading-tight px-2 font-medium">Nota: El archivo se guardará en la carpeta de descargas de tu dispositivo.</p>
         </div>
     </div>
 
-    <!-- Navegación Inferior -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 flex justify-around items-center z-50 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+    <!-- Navegación inferior fija -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-3 flex justify-around items-center z-50 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         <button onclick="switchTab('form')" id="btn-form" class="flex flex-col items-center text-blue-700">
-            <i class="fas fa-edit text-xl"></i>
-            <span class="text-[9px] font-black uppercase mt-1">Registro</span>
+            <i class="fas fa-id-card text-2xl"></i>
+            <span class="text-[10px] font-black uppercase mt-1">Registro</span>
         </button>
         
         <button onclick="toggleModal()" class="flex flex-col items-center">
-            <div class="bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-xl -mt-10 border-4 border-white active:scale-90 transition-transform">
-                <i class="fas fa-share-nodes"></i>
+            <div class="bg-blue-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl -mt-12 border-[6px] border-gray-50 active:scale-90 transition-all">
+                <i class="fas fa-download text-xl"></i>
             </div>
-            <span class="text-[9px] font-black uppercase mt-1 text-gray-400">Exportar</span>
+            <span class="text-[10px] font-black uppercase mt-1 text-gray-400">Exportar</span>
         </button>
 
         <button onclick="switchTab('list')" id="btn-list" class="flex flex-col items-center text-gray-400">
-            <i class="fas fa-database text-xl"></i>
-            <span class="text-[9px] font-black uppercase mt-1">Base Datos</span>
+            <i class="fas fa-server text-2xl"></i>
+            <span class="text-[10px] font-black uppercase mt-1">Datos</span>
         </button>
     </nav>
 
-    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full text-[10px] font-bold opacity-0 transition-opacity z-[200] pointer-events-none whitespace-nowrap"></div>
+    <!-- Notificaciones flotantes (Toast) -->
+    <div id="toast" class="fixed bottom-28 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-[11px] font-black opacity-0 transition-all z-[200] pointer-events-none shadow-2xl border border-gray-700"></div>
 
     <script>
-        // Versión de base de datos para evitar conflictos
-        const DB_KEY = 'sync_pro_db_final_v10';
-        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        // Clave única para evitar conflictos de datos
+        const STORAGE_KEY = 'SYNC_PRO_REGS_V11';
+        let db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let editingId = null;
 
-        function getGPS() {
+        // Función de detección GPS básica
+        function detectGPS() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    p => {
-                        document.getElementById('gps-status').innerText = "GPS: ACTIVADO";
+                    () => {
+                        document.getElementById('gps-status').innerText = "GPS: CONECTADO";
                         document.getElementById('gps-icon').className = "fas fa-check-circle text-emerald-500";
                     },
                     () => { 
-                        document.getElementById('gps-status').innerText = "GPS: SIN SEÑAL";
-                        document.getElementById('gps-icon').className = "fas fa-exclamation-triangle text-amber-500";
+                        document.getElementById('gps-status').innerText = "GPS: ACTIVAR UBICACIÓN";
+                        document.getElementById('gps-icon').className = "fas fa-exclamation-triangle text-amber-500 animate-none";
                     }
                 );
             }
         }
-        window.onload = getGPS;
+        window.onload = detectGPS;
 
-        function showToast(m) {
-            const t = document.getElementById('toast');
-            t.innerText = m; t.style.opacity = '1';
-            setTimeout(() => t.style.opacity = '0', 3000);
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 3000);
         }
 
-        function switchTab(tab) {
+        function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
             
-            document.getElementById('btn-form').className = 'flex flex-col items-center ' + (tab === 'form' ? 'text-blue-700' : 'text-gray-400');
-            document.getElementById('btn-list').className = 'flex flex-col items-center ' + (tab === 'list' ? 'text-blue-700' : 'text-gray-400');
+            document.getElementById('btn-form').className = 'flex flex-col items-center ' + (tabId === 'form' ? 'text-blue-700' : 'text-gray-400');
+            document.getElementById('btn-list').className = 'flex flex-col items-center ' + (tabId === 'list' ? 'text-blue-700' : 'text-gray-400');
             
-            if(tab === 'list') renderList();
+            if(tabId === 'list') renderRecords();
         }
 
         function toggleModal() {
@@ -157,120 +168,129 @@
 
         function saveData() {
             const cc = document.getElementById('cedula').value;
-            const n = document.getElementById('names').value;
-            const a = document.getElementById('lastnames').value;
-            const t = document.getElementById('phone').value;
+            const names = document.getElementById('names').value;
+            const lastnames = document.getElementById('lastnames').value;
+            const phone = document.getElementById('phone').value;
 
-            if(!cc || !n || !a || !t) return showToast("⚠️ REVISA TODOS LOS CAMPOS");
+            if(!cc || !names || !lastnames || !phone) {
+                return showToast("❌ POR FAVOR LLENA TODOS LOS CAMPOS");
+            }
 
-            const entry = {
+            const record = {
                 id: editingId || Date.now(),
-                cc, n, a, t,
+                cc, names, lastnames, phone,
                 date: new Date().toLocaleString()
             };
 
             if(editingId) {
-                const idx = db.findIndex(x => x.id === editingId);
-                db[idx] = entry;
+                db = db.map(item => item.id === editingId ? record : item);
                 editingId = null;
                 document.getElementById('save-btn').innerHTML = '<i class="fas fa-save"></i> GUARDAR REGISTRO';
             } else {
-                db.push(entry);
+                db.push(record);
             }
 
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
-            showToast("✅ REGISTRO ACTUALIZADO");
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+            showToast("✅ DATOS GUARDADOS CORRECTAMENTE");
+            
+            // Limpiar campos
             ['cedula', 'names', 'lastnames', 'phone'].forEach(id => document.getElementById(id).value = '');
         }
 
-        function renderList() {
+        function renderRecords() {
             const container = document.getElementById('list-container');
+            document.getElementById('counter').innerText = `${db.length} REGISTROS`;
+            
             if(db.length === 0) {
-                container.innerHTML = '<div class="text-center py-20 text-gray-400 font-bold text-[10px] uppercase">Base de datos vacía</div>';
+                container.innerHTML = '<div class="text-center py-20 text-gray-300 font-black text-[11px] uppercase tracking-widest">Sin registros grabados</div>';
                 return;
             }
-            container.innerHTML = db.slice().reverse().map(r => `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-blue-600 mb-3 relative">
-                    <p class="text-[11px] font-black text-blue-900 uppercase">${r.n} ${r.a}</p>
-                    <p class="text-sm font-black text-black mt-1">CC: ${r.cc}</p>
-                    <p class="text-[9px] text-gray-400 italic">${r.date}</p>
-                    <div class="flex gap-2 mt-3 border-t pt-3">
-                        <a href="https://wa.me/57${r.t}" target="_blank" class="bg-emerald-50 text-emerald-600 px-3 py-2 rounded-lg text-[10px] font-black flex-1 flex items-center justify-center gap-1">
-                            <i class="fab fa-whatsapp"></i> CONTACTAR
+            
+            container.innerHTML = db.slice().reverse().map(item => `
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[10px] font-black text-blue-600 uppercase tracking-tighter">${item.names} ${item.lastnames}</p>
+                            <p class="text-base font-black text-gray-800 tracking-tight">CC: ${item.cc}</p>
+                        </div>
+                        <span class="text-[8px] font-bold text-gray-300 uppercase">${item.date}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="https://wa.me/57${item.phone}" target="_blank" class="flex-1 bg-emerald-50 text-emerald-700 py-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-2">
+                            <i class="fab fa-whatsapp text-sm"></i> WHATSAPP
                         </a>
-                        <button onclick="editEntry(${r.id})" class="bg-gray-100 text-gray-600 w-10 h-9 rounded-lg flex items-center justify-center"><i class="fas fa-edit"></i></button>
-                        <button onclick="deleteEntry(${r.id})" class="bg-red-50 text-red-600 w-10 h-9 rounded-lg flex items-center justify-center"><i class="fas fa-trash"></i></button>
+                        <button onclick="editRecord(${item.id})" class="bg-gray-50 text-gray-500 w-12 rounded-xl flex items-center justify-center border border-gray-100"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteRecord(${item.id})" class="bg-red-50 text-red-500 w-12 rounded-xl flex items-center justify-center border border-red-100"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function editEntry(id) {
-            const r = db.find(x => x.id === id);
-            document.getElementById('cedula').value = r.cc;
-            document.getElementById('names').value = r.n;
-            document.getElementById('lastnames').value = r.a;
-            document.getElementById('phone').value = r.t;
+        function editRecord(id) {
+            const record = db.find(item => item.id === id);
+            document.getElementById('cedula').value = record.cc;
+            document.getElementById('names').value = record.names;
+            document.getElementById('lastnames').value = record.lastnames;
+            document.getElementById('phone').value = record.phone;
             editingId = id;
             document.getElementById('save-btn').innerHTML = '<i class="fas fa-sync"></i> ACTUALIZAR DATOS';
             switchTab('form');
         }
 
-        function deleteEntry(id) {
-            if(!confirm("¿Borrar este registro?")) return;
-            db = db.filter(x => x.id !== id);
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
-            renderList();
+        function deleteRecord(id) {
+            if(confirm("¿Estás seguro de eliminar este registro?")) {
+                db = db.filter(item => item.id !== id);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+                renderRecords();
+            }
         }
 
-        // LÓGICA DE COMPARTIR NATIVO (SOLUCIÓN A ERROR DE PERMISOS)
-        async function handleShare(type) {
+        // --- SISTEMA DE EXPORTACIÓN CON ALTA COMPATIBILIDAD (BASE64) ---
+        async function handleExport(format) {
             if(db.length === 0) return showToast("No hay datos para exportar");
+            toggleModal();
+            showToast("⏳ Generando archivo...");
 
-            let file;
-            if(type === 'csv') {
-                let csv = "\uFEFFFecha,Cedula,Nombres,Apellidos,Telefono\n";
-                db.forEach(r => csv += `"${r.date}","${r.cc}","${r.n}","${r.a}","${r.t}"\n`);
-                file = new File([csv], 'Reporte_SyncPro.csv', { type: 'text/csv' });
+            let blob;
+            let fileName;
+
+            if(format === 'csv') {
+                // Agregar BOM para soporte de tildes en Excel
+                let csvContent = "\uFEFFFecha,Cedula,Nombres,Apellidos,Telefono\n";
+                db.forEach(r => {
+                    csvContent += `"${r.date}","${r.cc}","${r.names}","${r.lastnames}","${r.phone}"\n`;
+                });
+                blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                fileName = 'Base_Sync_Pro.csv';
             } else {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                doc.text("REPORTE SYNC PRO", 14, 15);
-                doc.autoTable({ 
-                    head: [['Fecha', 'Cédula', 'Nombres', 'Teléfono']], 
-                    body: db.map(r => [r.date, r.cc, r.n + ' ' + r.a, r.t]), 
-                    startY: 20 
+                doc.setFontSize(16);
+                doc.text("REPORTE OFICIAL - SYNC PRO", 14, 15);
+                doc.autoTable({
+                    head: [['Fecha', 'Cédula', 'Nombre Completo', 'Teléfono']],
+                    body: db.map(r => [r.date, r.cc, `${r.names} ${r.lastnames}`, r.phone]),
+                    startY: 20,
+                    theme: 'grid',
+                    headStyles: { fillColor: [30, 64, 175] }
                 });
-                const pdfBlob = doc.output('blob');
-                file = new File([pdfBlob], 'Reporte_SyncPro.pdf', { type: 'application/pdf' });
+                blob = doc.output('blob');
+                fileName = 'Reporte_Sync_Pro.pdf';
             }
 
-            // Intentar compartir usando API nativa
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Reporte Sync Pro',
-                        text: 'Adjunto envío base de datos actualizada.'
-                    });
-                    showToast("✅ Menú de envío abierto");
-                } catch (err) {
-                    fallbackDownload(file);
-                }
-            } else {
-                fallbackDownload(file);
-            }
-        }
-
-        function fallbackDownload(file) {
-            const url = URL.createObjectURL(file);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            showToast("⚠️ Descarga alternativa iniciada");
+            // Transformar a Base64 para saltar restricciones de WebViews en AppsGeyser
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                const downloadLink = document.createElement('a');
+                downloadLink.href = base64Data;
+                downloadLink.download = fileName;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                showToast("📥 Descarga iniciada");
+            };
+            reader.readAsDataURL(blob);
         }
     </script>
 </body>
